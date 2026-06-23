@@ -1,98 +1,109 @@
 # MINIverse Gacha UI & Presentation
 
-Unity 기반 미니게임 프로젝트 **MINIverse**에서 담당한 캐릭터 가챠 UI와 2D 연출 구현을 정리한 포트폴리오 저장소입니다.
+Unity 기반 미니게임 프로젝트 **MINIverse**에서 담당한 가챠 시스템, 결과 UI, 캐릭터 등장 연출을 정리한 포트폴리오용 저장소입니다.
 
-> 이 저장소는 팀 프로젝트 전체 소스가 아닌, 본인이 담당한 가챠 씬 스크립트와 실행 결과만 선별한 포트폴리오용 코드 아카이브입니다. 전체 프로젝트 의존성이 제외되어 있어 단독 실행용 Unity 프로젝트는 아닙니다.
+> 이 저장소는 전체 프로젝트가 아니라, 제가 담당한 가챠 UI/연출 관련 스크립트와 실행 결과만 공개한 코드 아카이브입니다.  
+> 원본 프로젝트의 공통 시스템, 리소스, 세이브 데이터 구조 일부는 제외되어 있어 단독 실행용 Unity 프로젝트는 아닙니다.
+
+## Preview
+
+### Dragon
+
+![Dragon gacha presentation](Media/goni.gif)
+
+### Nine Tail
+
+![Nine Tail gacha presentation](Media/miho.gif)
+
+### Unicorn
+
+![Unicorn gacha presentation](Media/uni.gif)
 
 ## 담당 범위
 
-- 일반/특수 뽑기와 재화 검증
-- 희귀도별 가중치 추첨
-- 신규 캐릭터 해금 및 중복 보상 처리
-- 저장 데이터와 재화 UI 연동
-- 망원경·UFO 탐색 인터랙션
-- 캐릭터 타입별 파티클·배경·결과 화면 분기
-- 다시 뽑기와 로비 복귀 흐름
-- DOTween 기반 UI 시퀀스 및 상태 초기화
+- 일반/특수 뽑기 비용 차감 및 확률 기반 캐릭터 추첨
+- 신규 획득 / 중복 보상 처리 및 보유 골드 갱신
+- 결과 등급에 따른 일반 결과 화면 / 특수 연출 화면 분기
+- DOTween 기반 UI 전환, UFO 탐색, 캐릭터 등장 애니메이션 구현
+- ParticleSystem을 활용한 캐릭터별 결과 피드백 연출
+- Shader Property를 활용한 디졸브 기반 캐릭터 등장 연출
+- 연속 입력 방지, Tween 종료, Particle 초기화 등 반복 실행 안정성 처리
 
 ## Tech Stack
 
 - Unity / C#
-- uGUI / TextMeshPro
+- UGUI / TextMeshPro
 - DOTween
-- Particle System
-- UI Shader parameter control
+- ParticleSystem
+- Shader Property Control
 
-## 실행 결과
-
-### Goni
-
-![Goni gacha presentation](Media/goni.gif)
-
-### Miho
-
-![Miho gacha presentation](Media/miho.gif)
-
-### Uni
-
-![Uni gacha presentation](Media/uni.gif)
-
-## 사용자 흐름
+## 주요 구현 흐름
 
 ```mermaid
 flowchart LR
-    A[뽑기 입력] --> B[재화 검증]
-    B --> C[가중치 추첨]
-    C --> D[신규 해금 / 중복 보상]
-    D --> E[저장 및 UI 갱신]
+    A[가챠 버튼 입력] --> B[보유 골드 검증]
+    B --> C[확률 기반 캐릭터 추첨]
+    C --> D[신규 획득 / 중복 보상 처리]
+    D --> E[골드 및 결과 데이터 갱신]
     E --> F{결과 분기}
     F -->|Normal 또는 중복| G[일반 결과 UI]
-    F -->|Rare 이상 신규| H[망원경 프리뷰]
-    H --> I[UFO 탐색 및 클릭]
-    I --> J[캐릭터별 특수 연출]
-    J --> K[최종 결과 UI]
+    F -->|Rare 이상 신규 획득| H[UFO 탐색 연출]
+    H --> I[캐릭터별 특수 연출]
+    I --> J[최종 결과 UI]
 ```
 
-## 주요 구현
+## 대표 구현 코드
 
-### 희귀도 확률을 보존하는 추첨
-
-`GachaRoller`는 `CharacterManager`에서 가챠 획득 대상으로 설정된 캐릭터를 구성하고, 희귀도 가중치를 같은 등급의 캐릭터 수로 나누어 정규화합니다. 캐릭터가 추가되더라도 희귀도 전체 확률이 의도치 않게 증가하지 않도록 누적 가중치 방식으로 결과를 선택합니다.
-
-### 결과 데이터와 연출의 연결
-
-`GachaButtonManager`가 재화 검증, 추첨, 신규/중복 처리, 저장과 결과 분기를 조정합니다. 일반 결과와 중복 결과는 기본 결과 화면으로, Rare 이상 신규 결과는 망원경·UFO 특수 시퀀스로 연결합니다.
-
-### 카메라 이동 없는 2D 탐색 연출
-
-`GachaTelescopePreview`와 `UFOScopeIntro`는 UI 위치·회전·스케일·알파 트윈과 셰이더의 중심점·반경 값을 조합합니다. 실제 카메라를 이동하지 않고 망원경이 UFO를 추적하고 놓친 뒤 다시 발견하는 흐름을 구성했습니다.
-
-### 인터랙션과 캐릭터별 분기
-
-`UFOButtonEffect`는 중복 입력을 막고 클릭 시 스쿼시 앤 스트레치, 이동, 회전, 페이드 연출을 실행합니다. 추첨된 캐릭터 타입에 따라 파티클과 전용 결과 화면을 선택하고, 파티클 재생 시간이 끝난 뒤 다음 시퀀스로 전환합니다.
-
-### 캐릭터 공개 시퀀스
-
-캐릭터별 인트로는 디졸브 값을 제어해 심볼을 제거하고, 상·하단 배경을 열면서 캐릭터를 `0.05 → 1.18 → 1.0` 스케일로 등장시킵니다. 등장 완료 후 캐릭터별 파티클을 재생합니다.
-
-### 반복 실행 안정화
-
-다시 뽑기와 화면 재진입 시 Tween과 파티클을 종료·초기화하고, UI Transform과 CanvasGroup 상태를 복원합니다. 연출 중에는 버튼 입력을 잠가 시퀀스 중복 실행을 방지합니다.
-
-## Script Map
-
-| 영역 | 스크립트 |
+| 파일 | 구현 내용 |
 |---|---|
-| 추첨 및 화면 분기 | `GachaButtonManager`, `GachaRoller` |
-| 메인 화면 연출 | `GachaMachineAnimation`, `GachaTelescopePreview` |
-| UFO 탐색/입력 | `UFOScopeIntro`, `UFOButtonEffect` |
-| 캐릭터 공개 | `BackgroundMove`, `CharacterAppear` |
-| 캐릭터별 인트로 | `DragonSpecialIntro`, `NineTailSpecialIntro`, `UnicornSpecialIntro` |
-| 결과 화면 | `ResultCanvasManager`, `ResultIntro` |
+| `Scripts/GachaButtonManager.cs` | 가챠 버튼 입력, 골드 검증, 신규/중복 보상 처리, 결과 화면 분기 |
+| `Scripts/GachaRoller.cs` | 캐릭터 등급별 가중치 기반 추첨 로직 |
+| `Scripts/UFOScopeIntro.cs` | Shader 중심 좌표를 갱신하는 UFO 탐색 연출, 힌트 아웃라인 적용 |
+| `Scripts/UFOButtonEffect.cs` | UFO 클릭 입력 잠금, DOTween 이동 연출, 결과 캐릭터별 Particle 분기 |
+| `Scripts/CharacterAppear.cs` | 캐릭터 등장 Scale 애니메이션, Particle 초기화 및 재생 |
+| `Scripts/ResultCanvasManager.cs` | 결과 카드 이미지와 보유 골드 갱신, 결과별 Particle 출력 |
+| `Scripts/DragonSpecialIntro.cs` | Shader Property 기반 디졸브 연출과 전용 등장 시퀀스 |
+| `Scripts/NineTailSpecialIntro.cs` | 구미호 전용 등장 연출 시퀀스 |
+| `Scripts/UnicornSpecialIntro.cs` | 유니콘 전용 등장 연출 시퀀스 |
+
+## 구현 포인트
+
+### 1. 확률 추첨과 결과 분기
+
+`GachaRoller`에서 등급별 가중치를 기반으로 캐릭터를 추첨하고, `GachaButtonManager`에서 결과가 Normal인지, 중복인지, Rare 이상 신규 획득인지에 따라 화면 흐름을 분기했습니다.
+
+이 구조를 통해 결과 데이터와 UI 연출을 분리하고, 캐릭터가 추가되어도 추첨 로직과 결과 연출 흐름을 유지할 수 있도록 구성했습니다.
+
+### 2. 사용자 피드백 중심의 UI 연출
+
+가챠 결과가 바로 노출되지 않도록 UFO 탐색, 클릭, 파티클, 캐릭터 등장 순서로 시퀀스를 구성했습니다.
+
+DOTween을 활용해 화면 전환과 오브젝트 움직임을 제어하고, 캐릭터 타입에 따라 전용 Particle과 결과 화면이 출력되도록 분기했습니다.
+
+### 3. 반복 실행 안정성
+
+가챠는 반복 실행이 많은 기능이기 때문에 연출이 끝난 뒤에도 이전 Tween, Particle, CanvasGroup 상태가 남지 않도록 초기화 처리를 넣었습니다.
+
+`DOKill`, `StopEmittingAndClear`, Canvas 활성화/비활성화 처리를 통해 다시 뽑기를 실행해도 이전 결과가 섞이지 않도록 관리했습니다.
+
+### 4. Shader 기반 시각 효과
+
+특수 캐릭터 등장 시 `Shader Property` 값을 DOTween으로 제어하여 디졸브 연출을 적용했습니다.
+
+연출 자체보다 결과 등급과 캐릭터 등장 순간을 명확하게 전달하는 데 초점을 두었습니다.
 
 ## Repository Scope
 
-공개 범위를 본인 담당 작업으로 제한하기 위해 팀 공용 시스템, 다른 미니게임 코드, 원본 아트 리소스와 프로젝트 설정은 포함하지 않았습니다. 스크립트가 참조하는 `CharacterData`, `CharacterManager`, `SaveManager`, `SoundManager`, `RarityConfig` 등은 전체 프로젝트의 공용 시스템입니다.
+이 저장소에는 포트폴리오 검토를 위해 공개 가능한 가챠 UI/연출 스크립트와 GIF만 포함했습니다.
+
+다음 항목은 원본 프로젝트의 공통 시스템 또는 외부 리소스에 해당하여 포함하지 않았습니다.
+
+- `CharacterData`
+- `CharacterManager`
+- `SaveManager`
+- `SoundManager`
+- `RarityConfig`
+- 원본 아트 리소스 및 전체 Unity 프로젝트 설정
 
 ## Rights
 
